@@ -13,7 +13,22 @@ namespace ObjectExtractor
 	// engineering a solution to make this work, so.. sorry :)
 	public class VMFExporter
 	{
-
+		string[] LDPackageTags =
+		{
+			"00_",
+			"LD_",
+			"DCR_",
+			"DN_",
+			"RB_",
+			"BB_",
+			"CP_",
+			"DS_",
+			"DR_",
+			"MS_",
+			"PC_",
+			"OE_",
+			"SF_"
+		};
 
 		const float UROT2DEGREE = 0.00549316540360483f;
 		const float MODEL_SCALE = 0.5f;
@@ -89,8 +104,9 @@ namespace ObjectExtractor
 			string game = "gow1";
 			string modelDir = $"models/elan/{game}";
 
-			// We're aN LD asset
-			if (origPath.StartsWith("LD_"))
+			// Get text to the first _
+			string tag = origPath.Substring(0, (origPath.IndexOf("_") + 1));
+			if (LDPackageTags.Contains(tag))
 			{
 				modelDir += "/LDAssets/";
 			}
@@ -100,7 +116,6 @@ namespace ObjectExtractor
 			}
 
 			modelDir += origPath.Replace(".", "/");
-
 
 			string scale = ParseScale(obj);
 
@@ -159,7 +174,12 @@ namespace ObjectExtractor
 			float y = -(FixupAngle(angles.Y * UROT2DEGREE) - 90);
 			float z = FixupAngle(angles.Z * UROT2DEGREE);
 
-			return $"{x} {y} {z}";
+			x = (float)Math.Round((decimal)x, 3, MidpointRounding.AwayFromZero);
+			y = (float)Math.Round((decimal)y, 3, MidpointRounding.AwayFromZero);
+			z = (float)Math.Round((decimal)z, 3, MidpointRounding.AwayFromZero);
+
+			//For some reason, X and Z rotations are almost *always* flipped so insead, X goes into Z, and vice versa.
+			return $"{z} {y} {x}";
 		}
 
 		private string ParseScale(T3DObject obj)
@@ -185,13 +205,9 @@ namespace ObjectExtractor
 			float y = drawScale3d.Y;
 			float z = drawScale3d.Z;
 
-			// We're a mirrored object
-			bool isMirrored = false; 
-			if (x < 0)
-			{
-				x *= -1;
-				isMirrored = true;
-			}
+			x = (float)Math.Round((decimal)x, 3, MidpointRounding.AwayFromZero);
+			y = (float)Math.Round((decimal)y, 3, MidpointRounding.AwayFromZero);
+			z = (float)Math.Round((decimal)z, 3, MidpointRounding.AwayFromZero);
 
 			if (y < 0)
 			{
@@ -204,19 +220,14 @@ namespace ObjectExtractor
 			}
 
 			string vecString = $"_{x}_{y}_{z}";
-			if (isMirrored)
+			if (x == y && x == z)
 			{
-				vecString += "_mirrored";
+				vecString = $"_{x}times";
 			}
 
 			// If our scale is equal, dont bother returning it.
 			if (x == 1.0f && y == 1.0f && z == 1.0f)
 			{
-				if (isMirrored)
-				{
-					return "_mirrored";
-				}
-
 				return "";
 			}
 
